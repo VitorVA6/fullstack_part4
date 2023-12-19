@@ -28,7 +28,26 @@ blogsRouter.post('/', middleware.userExtractor, async (request, response) => {
   user.blogs = user.blogs.concat(savedBlog.id)
   await user.save()
 
-  response.status(201).json(savedBlog)
+  const populatedBlog = await Blog
+    .findById(savedBlog.id)
+    .populate('user', { username: 1, name: 1 })
+
+  response.status(201).json(populatedBlog)
+})
+
+blogsRouter.put('/:id', async(request, response) => {
+  const body = request.body
+
+  const newBlog = {
+    user: body.user,
+    title: body.title,
+    url: body.url,
+    author: body.author,
+    likes: body.likes || 0
+  }
+
+  const updatedBlog = await Blog.findByIdAndUpdate(request.params.id, newBlog, { new: true })
+  response.json(updatedBlog)
 })
 
 blogsRouter.delete('/:id', middleware.userExtractor, async (request, response) => {
@@ -42,20 +61,6 @@ blogsRouter.delete('/:id', middleware.userExtractor, async (request, response) =
     return response.status(204).end()
   }
   return response.status(401).json({ error: 'you are not authorized for this operation' })
-})
-
-blogsRouter.put('/:id', async(request, response) => {
-  const body = request.body
-
-  const newBlog = {
-    title: body.title,
-    url: body.url,
-    author: body.author,
-    likes: body.likes || 0
-  }
-
-  const updatedBlog = await Blog.findByIdAndUpdate(request.params.id, newBlog, { new: true })
-  response.json(updatedBlog)
 })
 
 module.exports = blogsRouter
